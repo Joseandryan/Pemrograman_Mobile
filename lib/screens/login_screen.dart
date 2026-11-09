@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
 import '../services/api_service.dart';
 import '../services/secure_storage_service.dart';
+import '../utils/validators.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // [Latihan 1] Proses Login & Simpan Token ke Secure Storage
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -36,7 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
           _passwordController.text.trim(),
         );
 
-        // Simpan token yang didapat ke Secure Storage
         await _storageService.saveToken(token);
 
         if (mounted) {
@@ -46,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          // Pindah ke HomeScreen
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -56,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString().replaceAll('Exception: ', '')),
+              content: Text(e.toString()),
               backgroundColor: Colors.red,
             ),
           );
@@ -75,30 +72,21 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
-              const Icon(Icons.lock_person, size: 80, color: Colors.deepPurple),
-              const SizedBox(height: 24),
               TextFormField(
                 controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Email tidak boleh kosong';
-                  }
-                  return null;
-                },
+                validator: (val) => Validators.validateEmail(val),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -109,31 +97,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   prefixIcon: Icon(Icons.lock),
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                validator: (val) {
+                  if (val == null || val.isEmpty) {
                     return 'Password tidak boleh kosong';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Login'),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text('Login', style: TextStyle(fontSize: 16)),
               ),
             ],
           ),

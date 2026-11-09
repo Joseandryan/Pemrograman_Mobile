@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../config/dependency_injector.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
+import '../repositories/user_repository.dart';
 import '../widgets/user_card.dart';
 
 class UserListScreen extends StatefulWidget {
-  const UserListScreen({super.key});
+  final UserRepository? repository;
+  const UserListScreen({super.key, this.repository});
 
   @override
   State<UserListScreen> createState() => _UserListScreenState();
 }
 
 class _UserListScreenState extends State<UserListScreen> {
-  final ApiService _apiService = ApiService();
+  late final UserRepository _repository;
   final TextEditingController _searchController = TextEditingController();
 
   List<User> _allUsers = [];
@@ -24,6 +26,7 @@ class _UserListScreenState extends State<UserListScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? DependencyInjector().userRepository;
     _loadUsers();
   }
 
@@ -40,10 +43,7 @@ class _UserListScreenState extends State<UserListScreen> {
     });
 
     try {
-      // [Latihan 5] Memanggil getUsers dengan custom timeout 10 detik
-      final users = await _apiService.getUsers(
-        timeout: const Duration(seconds: 10),
-      );
+      final users = await _repository.getUsers();
       setState(() {
         _allUsers = users;
         _filteredUsers = users;
@@ -57,7 +57,6 @@ class _UserListScreenState extends State<UserListScreen> {
     }
   }
 
-  // [Latihan 4] Filter pencarian real-time berdasarkan Nama atau Email
   void _filterUsers(String query) {
     final filtered = _allUsers.where((user) {
       final nameLower = user.name.toLowerCase();

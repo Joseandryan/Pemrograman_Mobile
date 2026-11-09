@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../config/dependency_injector.dart';
 import '../models/post.dart';
-import '../services/api_service.dart';
+import '../repositories/post_repository.dart';
 
 class PostListScreen extends StatefulWidget {
-  const PostListScreen({super.key});
+  final PostRepository? repository;
+  const PostListScreen({super.key, this.repository});
 
   @override
   State<PostListScreen> createState() => _PostListScreenState();
 }
 
 class _PostListScreenState extends State<PostListScreen> {
-  final ApiService _apiService = ApiService();
+  late final PostRepository _repository;
   List<Post> _posts = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -19,6 +21,7 @@ class _PostListScreenState extends State<PostListScreen> {
   @override
   void initState() {
     super.initState();
+    _repository = widget.repository ?? DependencyInjector().postRepository;
     _loadPosts();
   }
 
@@ -29,7 +32,7 @@ class _PostListScreenState extends State<PostListScreen> {
     });
 
     try {
-      final posts = await _apiService.getPosts();
+      final posts = await _repository.getPosts();
       setState(() {
         _posts = posts;
         _isLoading = false;
@@ -49,68 +52,31 @@ class _PostListScreenState extends State<PostListScreen> {
         title: const Text('Daftar Postingan (/posts)'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadPosts),
-        ],
       ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(_errorMessage!),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadPosts,
-              child: const Text('Coba Lagi'),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? Center(child: Text(_errorMessage!))
+          : ListView.builder(
+              itemCount: _posts.length,
+              itemBuilder: (context, index) {
+                final post = _posts[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: ListTile(
+                    leading: CircleAvatar(child: Text('${post.id}')),
+                    title: Text(
+                      post.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(post.body),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadPosts,
-      child: ListView.builder(
-        itemCount: _posts.length,
-        itemBuilder: (context, index) {
-          final post = _posts[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.deepPurple,
-                child: Text(
-                  '${post.id}',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              title: Text(
-                post.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(
-                post.body,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }
